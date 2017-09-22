@@ -17,8 +17,6 @@
 #                           , and patch the ramdisk for Magisk support
 # init.magisk.rc  script    A new line will be added to init.rc to import this script.
 #                           All magisk entrypoints are defined here
-# chromeos        folder    This folder should store all the utilities and keys to sign
-#               (optional)  a chromeos device, used in the tablet Pixel C
 #
 # If the script is not running as root, then the input boot image should be a stock image
 # or have a backup included in ramdisk internally, since we cannot access the stock boot
@@ -94,7 +92,6 @@ chmod -R 755 .
 
 migrate_boot_backup
 
-CHROMEOS=false
 
 ui_print "- Unpacking boot image"
 ./magiskboot --unpack "$BOOTIMAGE"
@@ -104,7 +101,7 @@ case $? in
     abort "! Unable to unpack boot image"
     ;;
   2 )
-    CHROMEOS=true
+    abort "ChromeOS not support"
     ;;
   3 )
     ui_print "! Sony ELF32 format detected"
@@ -226,8 +223,5 @@ A1020054011440B93FA00F7140020054010840B93FA00F71E0010054001840B91FA00F7181010054
 
 ui_print "- Repacking boot image"
 ./magiskboot --repack "$BOOTIMAGE" || abort "! Unable to repack boot image!"
-
-# Sign chromeos boot
-$CHROMEOS && sign_chromeos
 
 ./magiskboot --cleanup
