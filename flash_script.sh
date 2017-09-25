@@ -94,7 +94,7 @@ fi
 # Copy required files
 rm -rf $MAGISKBIN 2>/dev/null
 mkdir -p $MAGISKBIN
-cp -af $BINDIR/. $COMMONDIR/. $BINDIR/busybox $MAGISKBIN
+cp -af $BINDIR/. $COMMONDIR/. $MAGISKBIN
 
 # addon.d
 if [ -d /system/addon.d ]; then
