@@ -18,5 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 **MagiskScript**
 
-Copyright 2017, ErnyTech
-Copyright 2017, John Wu (@topjohnwu)
+* Copyright 2017, ErnyTech
+
+* Copyright 2017, John Wu (@topjohnwu)
