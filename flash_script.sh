@@ -23,6 +23,7 @@ TMPDIR=/dev/tmp
 
 INSTALLER=$TMPDIR/install
 COMMONDIR=$INSTALLER/common
+CHROMEDIR=$INSTALLER/chromeos
 COREDIR=/magisk/.core
 
 # Default permissions
@@ -30,10 +31,6 @@ umask 022
 
 OUTFD=$2
 ZIP=$3
-
-rm -rf $TMPDIR 2>/dev/null
-mkdir -p $INSTALLER
-unzip -o "$ZIP" -d $INSTALLER 2>/dev/null
 
 if [ ! -f $COMMONDIR/util_functions.sh ]; then
   echo "! Unable to extract zip file!"
@@ -53,7 +50,7 @@ ui_print "************************"
 ui_print "* Magisk v$MAGISK_VER Installer"
 ui_print "************************"
 
-is_mounted /data || mount /data
+is_mounted /data || mount /data || is_mounted /cache || mount /cache || abort "! Unable to mount partitions"
 mount_partitions
 
 # read override variables
@@ -72,7 +69,7 @@ remove_system_su
 ui_print "- Device platform: $ARCH"
 
 BINDIR=$INSTALLER/$ARCH
-chmod -R 755 $BINDIR
+chmod -R 755 $CHROMEDIR $BINDIR
 
 ##########################################################################################
 # Environment
@@ -89,12 +86,13 @@ if $BOOTMODE; then
 fi
 
 # Save our stock boot image dump before removing it
-[ -f $MAGISKBIN/stock_boot* ] && mv $MAGISKBIN/stock_boot* /data
+mv /data/magisk/stock_boot* /data 2>/dev/null
 
 # Copy required files
 rm -rf $MAGISKBIN 2>/dev/null
 mkdir -p $MAGISKBIN
-cp -af $BINDIR/. $COMMONDIR/. $MAGISKBIN
+cp -af $BINDIR/. $COMMONDIR/. $CHROMEDIR $TMPDIR/bin/busybox $MAGISKBIN
+chmod -R 755 $MAGISKBIN
 
 # addon.d
 if [ -d /system/addon.d ]; then
@@ -104,7 +102,7 @@ if [ -d /system/addon.d ]; then
   chmod 755 /system/addon.d/99-magisk.sh
 fi
 
-$BOOTMODE && boot_actions || recovery_actions
+$BOOTMODE || recovery_actions
 
 ##########################################################################################
 # Boot patching
@@ -125,16 +123,10 @@ if [ -f stock_boot* ]; then
   mv stock_boot* /data
 fi
 
-ui_print "- Flashing new boot image"
-if [ -L "$BOOTIMAGE" ]; then
-  dd if=new-boot.img of="$BOOTIMAGE" bs=4096
-else
-  cat new-boot.img /dev/zero | dd of="$BOOTIMAGE" bs=4096 >/dev/null 2>&1
-fi
+flash_boot_image new-boot.img "$BOOTIMAGE"
 rm -f new-boot.img
 
 cd /
-
 # Cleanups
 $BOOTMODE || recovery_cleanup
 rm -rf $TMPDIR
