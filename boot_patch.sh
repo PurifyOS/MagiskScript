@@ -17,6 +17,8 @@
 #                           , and patch the ramdisk for Magisk support
 # init.magisk.rc  script    A new line will be added to init.rc to import this script.
 #                           All magisk entrypoints are defined here
+# chromeos        folder    This folder should store all the utilities and keys to sign
+#               (optional)  a chromeos device, used in the tablet Pixel C
 #
 # If the script is not running as root, then the input boot image should be a stock image
 # or have a backup included in ramdisk internally, since we cannot access the stock boot
@@ -92,6 +94,7 @@ chmod -R 755 .
 
 migrate_boot_backup
 
+CHROMEOS=false
 
 ui_print "- Unpacking boot image"
 ./magiskboot --unpack "$BOOTIMAGE"
@@ -101,7 +104,7 @@ case $? in
     abort "! Unable to unpack boot image"
     ;;
   2 )
-    abort "ChromeOS not support"
+    CHROMEOS=true
     ;;
   3 )
     ui_print "! Sony ELF32 format detected"
@@ -177,7 +180,7 @@ if [ ! -z $SHA1 ]; then
 fi
 
 if $SKIP_INITRAMFS; then
-  cpio_add 750 init ./magiskinit
+  cpio_add 750 init magiskinit
   cpio_mkdir 000 overlay
   cpio_add 750 overlay/init.magisk.rc init.magisk.rc
   cpio_mkdir 750 overlay/sbin
@@ -217,11 +220,14 @@ rm -f ramdisk.cpio.orig
 A1020054011440B93FA00F7140020054010840B93FA00F71E0010054001840B91FA00F7181010054
 
 # skip_initramfs -> want_initramfs
-./magiskboot --hexpatch kernel \
+$SKIP_INITRAMFS && ./magiskboot --hexpatch kernel \
 736B69705F696E697472616D6673 \
 77616E745F696E697472616D6673
 
 ui_print "- Repacking boot image"
 ./magiskboot --repack "$BOOTIMAGE" || abort "! Unable to repack boot image!"
+
+# Sign chromeos boot
+$CHROMEOS && sign_chromeos
 
 ./magiskboot --cleanup
